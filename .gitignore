@@ -1,0 +1,6 @@
+#dataset folders
+rlds_dataset_builder/rlds_dataset/
+rlds_dataset_builder/rlds_dataset_npy/
+rlds_dataset_builder/example_dataset/
+tm_robot_pybullet/rlds_dataset/
+tm_robot_pybullet/Random_record_one_grasp_90_v2.py/
