@@ -1,8 +1,6 @@
 import numpy as np
 from tm_robot_sim import run_simulation, save_rlds_episode
 
-
-
 def run_multiple_episodes(n_episodes=300, base_dir = "rlds_dataset_2"):
     grasp_success_list = []
     episode_counter = 1
