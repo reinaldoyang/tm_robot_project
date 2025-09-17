@@ -8,17 +8,11 @@ This repository was built to generate data and do fine-tuning for Vision-Languag
 
 - Gripper: WSG50
 
-- Current grasp success rate for data collection : ~75%
+- Current grasp success rate for data collection : ~75% <br>
 
-🚀 Usage
+
+# 🚀 Usage
 Simulation environment using PyBullet
-
-Robot used in this project: Techman robot TM5-700
-
-Gripper used in this project: WSG50
-
-run conda myenv
-tm_robot_sim for techman robot tm5-700 simulation using pybullet 
 
 run this to get a simulation once
 ```bash
