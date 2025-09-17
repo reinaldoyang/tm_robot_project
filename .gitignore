@@ -3,4 +3,11 @@ rlds_dataset_builder/rlds_dataset/
 rlds_dataset_builder/rlds_dataset_npy/
 rlds_dataset_builder/example_dataset/
 tm_robot_pybullet/rlds_dataset/
-tm_robot_pybullet/Random_record_one_grasp_90_v2.py/
+tm_robot_pybullet/Random_record_one_grasp_90_v2.py
+tm_robot_pybullet/__pycache__/
+tm_robot_pybullet/flash-attention/
+tm_robot_pybullet/rlds_dataset_2/
+.dockerignore
+Dockerfile
+rlds_dataset_builder/__pycache__/
+rlds_dataset_builder/robot_dataset/

@@ -2,6 +2,8 @@ import os
 import json
 import numpy as np
 from PIL import Image
+import shutil
+import random
 
 def convert_json_to_npy(json_path, img_base_path, save_path):
     """
@@ -66,7 +68,40 @@ def convert_all_eps(rlds_dataset_dir, save_dir):
         save_path = os.path.join(save_dir, f"{episode_folder}.npy")
         convert_json_to_npy(json_path, img_base_path, save_path)
 
+def split_dataset():
+    # Paths
+    dataset_dir = "rlds_dataset_npy"      # your current folder with all .npy episodes
+    train_dir = os.path.join(dataset_dir, "train")
+    val_dir = os.path.join(dataset_dir, "val")
+
+    # Create folders if they don't exist
+    os.makedirs(train_dir, exist_ok=True)
+    os.makedirs(val_dir, exist_ok=True)
+
+    # Get all .npy files
+    all_files = [f for f in os.listdir(dataset_dir) if f.endswith(".npy")]
+
+    # Shuffle randomly
+    random.shuffle(all_files)
+
+    # Split index
+    split_idx = int(len(all_files) * 0.8)  # 80% train
+
+    train_files = all_files[:split_idx]
+    val_files = all_files[split_idx:]
+
+    # Move files to respective folders
+    for f in train_files:
+        shutil.move(os.path.join(dataset_dir, f), os.path.join(train_dir, f))
+
+    for f in val_files:
+        shutil.move(os.path.join(dataset_dir, f), os.path.join(val_dir, f))
+
+    print(f"Total episodes: {len(all_files)}")
+    print(f"Train: {len(train_files)}, Val: {len(val_files)}")
+
 if __name__ == "__main__":
-    rlds_dataset_dir = "rlds_dataset"
+    rlds_dataset_dir = "../tm_robot_pybullet/rlds_dataset_2"
     save_dir = "rlds_dataset_npy"
     convert_all_eps(rlds_dataset_dir, save_dir)
+    split_dataset()

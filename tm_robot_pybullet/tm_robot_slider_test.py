@@ -5,20 +5,19 @@ import numpy as np
 import math
 from tm_robot_sim import create_simulation_env, attach_gripper_to_robot
 
-# ===================== Helper for sliders =====================
 def create_eef_sliders(name_prefix="eef"):
     """
     Creates sliders for end-effector XYZ position and roll/pitch/yaw in degrees.
     Returns a function to read current slider values as (x, y, z, roll, pitch, yaw) in radians.
     """
     # Position sliders
-    x_slider = p.addUserDebugParameter(f"{name_prefix}_x", 0.0, 2.0, 1.2)
+    x_slider = p.addUserDebugParameter(f"{name_prefix}_x", 0.0, 2.0, 0.6)
     y_slider = p.addUserDebugParameter(f"{name_prefix}_y", -1.0, 1.0, 0.0)
-    z_slider = p.addUserDebugParameter(f"{name_prefix}_z", 0.0, 1.5, 0.9)
+    z_slider = p.addUserDebugParameter(f"{name_prefix}_z", 0.0, 1.5, 1.1)
     
     # Orientation sliders (degrees)
     roll_slider  = p.addUserDebugParameter(f"{name_prefix}_roll", -180, 180, 0)
-    pitch_slider = p.addUserDebugParameter(f"{name_prefix}_pitch", -180, 180, 90)
+    pitch_slider = p.addUserDebugParameter(f"{name_prefix}_pitch", -180, 180, 180)
     yaw_slider   = p.addUserDebugParameter(f"{name_prefix}_yaw", -180, 180, 90)
 
     def read_sliders(radians=True):
@@ -35,10 +34,9 @@ def create_eef_sliders(name_prefix="eef"):
 
     return read_sliders
 
-# ===================== Main simulation =====================
 def run_slider_test():
     # Create environment
-    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("others")
+    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("GUI")
     attach_gripper_to_robot(robot_id, gripper_id)
     
     end_effector_idx = 6  # TM robot flange
@@ -77,7 +75,9 @@ def run_slider_test():
         ee_dir = p.getMatrixFromQuaternion(ee_orn)
         gripper_x = np.array([ee_dir[0], ee_dir[3], ee_dir[6]])  # x-axis in world frame
         p.addUserDebugLine(ee_pos, ee_pos + 0.2*gripper_x, [0,1,0], 3, lifeTime=0.1)
-    p.disconnect()
+    
 
 if __name__ == "__main__":
     run_slider_test()
+    p.disconnect()
+

@@ -62,7 +62,7 @@ def create_simulation_env(mode):
         baseOrientation = [0, 0, 0.7071, 0.7071]
     )
     # define the spawn range on the table
-    x_range = [0.65, 1.2]   # adjust to fit your table size
+    x_range = [0.65, 1.2]
     y_range = [-0.7, 0.3]
     z = 0.65  # cube height on top of the table
     draw_boundary(x_range, y_range, z)
@@ -122,7 +122,6 @@ def move_robot(robot_id, gripper_id, arm_joints, end_effector_idx, target_pos, g
 
     joint_poses = p.calculateInverseKinematics(robot_id, end_effector_idx, target_pos, target_orn) #ik return 6 for joint states
 
-    # print("IK returned:", len(joint_poses), joint_poses)
     for i, j in enumerate(arm_joints):
         p.setJointMotorControl2(
             bodyIndex=robot_id,
@@ -254,27 +253,27 @@ def run_simulation():
     cube_pos, cube_orn = get_object_state(cube_id)
     tray_pos, tray_orn = get_object_state(tray_id)
 
-    for t in range(1100):
+    for t in range(950):
         print(f'\rtimestep {t}...', end='')
         p.stepSimulation()
         time.sleep(1/240) #control simulation loop, 240hz default physics engine
 
         gripper_val=0
-        if t >= 100 and t < 400:
+        if t >= 100 and t < 200:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 0) #move above cube
-        elif t >= 400 and t < 500:
+        elif t >= 200 and t < 300:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 0) #move down to cube
-        elif t >= 500 and t < 600:
+        elif t >= 300 and t < 400:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 1) #close gripper
-        elif t >= 600 and t < 700:
+        elif t >= 400 and t < 500:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 1) #lift up
-        elif t >=700 and t < 800:
+        elif t >=500 and t < 600:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 1) #move above tray
-        elif t >= 800 and t < 900:
+        elif t >= 600 and t < 700:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 1) #move down to tray
-        elif t >= 900 and t < 1000:
+        elif t >= 700 and t < 800:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 0) #open gripper
-        elif t >= 1000 and t < 1100:
+        elif t >= 800 and t < 900:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 0) # go up
         
         if t % 48 == 0:

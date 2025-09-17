@@ -1,6 +1,19 @@
-Simulation environment using pybullet
+# Fine-Tuning OpenVLA on Custom Dataset Generation
+
+This repository was built to generate data and do fine-tuning for Vision-Language-Action (VLA) models.
+-Simulation engine: Pybullet
+-Robot: Techman TM5-700
+-Gripper: WSG50
+-Current grasp success rate for data collection : ~75%
+
+Current data collection success rate ~70%
+
+Simulation environment using PyBullet
+
 Robot used in this project: Techman robot TM5-700
+
 Gripper used in this project: WSG50
+
 run conda myenv
 tm_robot_sim for techman robot tm5-700 simulation using pybullet 
 
@@ -18,3 +31,27 @@ to control the robot using slider, run this
 ```bash
 python tm_robot_slider_test.py
 ```
+
+to convert the generated rlds dataset to npy file format
+```bash
+python convert_json_to_npy.py
+```
+
+after converting the generated rlds format dataset to npy, copy the train and val data to rlds_dataset_buider/robot_dataset folder
+
+and then build to tensorflow dataset format TFDS
+
+
+to start the container that are already created once
+```bash
+docker start -ai tm_robot_container
+```
+
+run container with dataset mounted
+```bash
+docker run --gpus all -it \
+  --name tm_robot_container \
+  -v /home/reinaldoyang/tm_robot_project/rlds_dataset_builder/rlds_dataset_npy:/workspace/rlds_dataset_npy \
+  tm_robot_env
+```
+currern
