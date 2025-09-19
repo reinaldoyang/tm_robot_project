@@ -100,4 +100,9 @@ use pytorch 2.80, openvla_nightly conda env
 
 torchrun --standalone --nnodes 1 --nproc-per-node 1 vla-scripts/finetune.py --vla_path "openvla/openvla-7b" --data_root_dir ~/tensorflow_datasets --dataset_name robot_dataset --run_root_dir ~/openvla_runs/robot_experiment_4 --adapter_tmp_dir ~/openvla_runs/robot_experiment_4/adapters --lora_rank 32 --batch_size 4 --grad_accumulation_steps 8 --learning_rate 5e-4 --image_aug True --wandb_project robot_finetune --wandb_entity reinaldoyang5-national-cheng-kung-university-co-op --save_steps 500 --max_steps 15000
 
+<<<<<<< HEAD
 ```
+=======
+```
+
+>>>>>>> 70bd5039493983ce109d1e9c4810df7f0a2dc4f7
