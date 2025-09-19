@@ -42,59 +42,7 @@ tfds build --overwrite
 cd openvla folder
 conda activate openvla_nightly
 run this finetuning script
-```bash
-# Common used commands
-
-Edit path file:
 
 ```bash
-gedit ~/.bashrc
-```
-
-To download the nvidia 570 open:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y nvidia-driver-570-open
-```
-
-To run docker for tensorflow, to solve the 5000 blackwell gpu not working
-
-```bash
-docker run --gpus all -it -v /home/reinaldoyang/tm_robot_project:/workspace nvcr.io/nvidia/tensorflow:25.02-tf2-py3
-
-```
-
-`-v /home/reinaldoyang/rlds_dataset_builder:/workspace` to mount the folder from host to container
-
-docker cheat sheet
-
-docker ps -a
-
-fine tuning command 
-
-to start the container that are already created once
-
-```bash
-
-docker start -ai tm_robot_container
-
-```
-
-run container with dataset mounted
-
-```bash
-
-docker run --gpus all -it \
-
---name tm_robot_container \
-
--v /home/reinaldoyang/tm_robot_project/rlds_dataset_builder/rlds_dataset_npy:/workspace/rlds_dataset_npy \
-
-tm_robot_env
-
-```
-use pytorch 2.80, openvla_nightly conda env
-
 torchrun --standalone --nnodes 1 --nproc-per-node 1 vla-scripts/finetune.py --vla_path "openvla/openvla-7b" --data_root_dir ~/tensorflow_datasets --dataset_name robot_dataset --run_root_dir ~/openvla_runs/robot_experiment_4 --adapter_tmp_dir ~/openvla_runs/robot_experiment_4/adapters --lora_rank 32 --batch_size 4 --grad_accumulation_steps 8 --learning_rate 5e-4 --image_aug True --wandb_project robot_finetune --wandb_entity reinaldoyang5-national-cheng-kung-university-co-op --save_steps 500 --max_steps 15000
 ```
