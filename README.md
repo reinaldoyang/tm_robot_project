@@ -33,29 +33,28 @@ to convert the generated dataset(img and json file) to npy file format
 ```bash
 python convert_json_to_npy.py
 ```
+rlds_dataset_builder folder is forked from this repo : https://github.com/kpertsch/rlds_dataset_builder
 
 after converting the original format dataset to npy, copy the data file which contain train and val to rlds_dataset_buider/robot_dataset data folder
 use rlds_env in order to convert the npy file into tfds format dataset using this command below:
 ```bash
+cd rlds_dataset_builder
 cd robot_dataset
 tfds build --overwrite
 ```
-
-
 
 ## Real Robot
 ```bash
 cd tm_robot_real
 ```
 
+## OpenVLA finetuning
+Please git clone openvla repo: https://github.com/openvla/openvla
 
 
 cd openvla folder
 conda activate openvla_nightly
 run this finetuning script
-
-
-
 
 
 ```bash
@@ -76,3 +75,10 @@ torchrun --standalone --nnodes 1
 --save_steps 500 
 --max_steps 15000
 ```
+
+## Openpi training and finetuning
+rlds_dataset_3, state x,y,z,rx,ry,rz
+
+## Openpi evaluation
+source the uv environment from the openpi dir
+source /home/youruser/openpi/.venv/bin/activate
