@@ -1,84 +1,157 @@
-# Fine-Tuning OpenVLA on Custom Dataset Generation
+# TM Robot Project: VLA Model Training & Evaluation
 
-This repository was built to generate data and do fine-tuning for Vision-Language-Action (VLA) models.
+A comprehensive robotics project for generating synthetic data, fine-tuning Vision-Language-Action (VLA) models, and evaluating them on pick-and-place tasks using the Techman TM5-700 robot.
 
-- Simulation engine: Pybullet
+## Overview
 
-- Robot: Techman TM5-700
+This repository provides a complete pipeline for:
+- **Synthetic data generation** using PyBullet simulation
+- **Dataset conversion** to RLDS/TFRecord format
+- **Fine-tuning** Vision-Language-Action models (OpenVLA, Pi0)
+- **Evaluation** in simulation and on real hardware
+- **Teleoperation** tools for data collection and debugging
 
-- Gripper: WSG50
+### Current Performance Metrics
+- **Grasp Success Rate (Data Collection)**: ~75%
+- **Simulation Environment**: PyBullet
+- **Robot**: Techman TM5-700
+- **End Effector**: WSG50 Gripper
+ 
+## Installation
 
-- Current grasp success rate for data collection : ~75% <br>
+### 1. Clone the Repository
 
-
-# 🚀 Usage
-## Simulation environment using PyBullet for Techman Robot TM5-700 robot
-
-run this to get a simulation once
 ```bash
+git clone https://github.com/yourusername/tm_robot_project.git
+cd tm_robot_project
+```
+
+### 2. Set Up PyBullet Environment
+
+```bash
+# Create and activate conda environment
+conda create -n tm_robot python=3.10
+conda activate tm_robot
+
+# Install PyBullet and dependencies
+pip install pybullet numpy opencv-python matplotlib tqdm
+```
+### 3. Install OpenVLA (for OpenVLA training)
+Please refer to OpenVLA official documentation
+
+### 4. Install OpenPi (for Pi0 training)
+Please refer to OpenPi official documentation
+
+### 5. Install RLDS Dataset Builder
+Please refer to RLDS dataset builder repo
+
+## Quick Start
+### Run a Single Simulation
+
+```bash
+cd tm_robot_pybullet
+conda activate tm_robot
 python tm_robot_sim.py
 ```
 
-to generate dataset, run this, this will also output the number of successful dataset generated
+### Generate Dataset (100 episodes)
+
 ```bash
 python evaluate_grasp_success.py
 ```
 
-to control the robot using slider, run this command
+### Teleoperate the Robot
+
 ```bash
+# Keyboard control
+python teleoperate_tm5.py
+
+# Slider control (GUI)
 python tm_robot_slider_test.py
 ```
 
-to convert the generated dataset(img and json file) to npy file format
+
+## Detailed Usage
+
+### 1. Data Generation
+#### Batch Generation
+```bash
+python evaluate_grasp_success.py
+```
+- Generates 100 episodes automatically
+- Filters based on success criteria
+- Displays success statistics
+
+
+### 2. Dataset Conversion
+
+#### Convert JSON to NPY Format
+
 ```bash
 python convert_json_to_npy.py
 ```
-rlds_dataset_builder folder is forked from this repo : https://github.com/kpertsch/rlds_dataset_builder
 
-after converting the original format dataset to npy, copy the data file which contain train and val to rlds_dataset_buider/robot_dataset data folder
-use rlds_env in order to convert the npy file into tfds format dataset using this command below:
+#### Convert NPY to RLDS/TFRecord
+
 ```bash
-cd rlds_dataset_builder
-cd robot_dataset
+# Copy NPY data to RLDS builder
+cp -r data/npy/* rlds_dataset_builder/robot_dataset/data/
+
+# Build TFRecord dataset
+cd rlds_dataset_builder/robot_dataset
 tfds build --overwrite
 ```
 
-## Real Robot
+**Output**: `~/tensorflow_datasets/robot_dataset/`
+
+## Model Training
+
+### OpenVLA Fine-tuning
+
 ```bash
-cd tm_robot_real
-```
-
-## OpenVLA finetuning
-Please git clone openvla repo: https://github.com/openvla/openvla
-
-
-cd openvla folder
+cd openvla
 conda activate openvla_nightly
-run this finetuning script
 
-
-```bash
-torchrun --standalone --nnodes 1 
---nproc-per-node 1 vla-scripts/finetune.py 
---vla_path "openvla/openvla-7b" 
---data_root_dir ~/tensorflow_datasets 
---dataset_name robot_dataset 
---run_root_dir ~/openvla_runs/robot_experiment_4 
---adapter_tmp_dir ~/openvla_runs/robot_experiment_4/adapters 
---lora_rank 32 
---batch_size 4 
---grad_accumulation_steps 8 
---learning_rate 5e-4 
---image_aug True 
---wandb_project robot_finetune 
---wandb_entity reinaldoyang5-national-cheng-kung-university-co-op 
---save_steps 500 
---max_steps 15000
+torchrun --standalone --nnodes 1 --nproc-per-node 1 \
+  vla-scripts/finetune.py \
+  --vla_path "openvla/openvla-7b" \
+  --data_root_dir ~/tensorflow_datasets \
+  --dataset_name robot_dataset \
+  --run_root_dir ~/openvla_runs/robot_experiment \
+  --adapter_tmp_dir ~/openvla_runs/robot_experiment/adapters \
+  --lora_rank 32 \
+  --batch_size 4 \
+  --grad_accumulation_steps 8 \
+  --learning_rate 5e-4 \
+  --image_aug True \
+  --wandb_project robot_finetune \
+  --wandb_entity your_wandb_username \
+  --save_steps 500 \
+  --max_steps 15000
 ```
 
-## Openpi training and finetuning
-rlds_dataset_3, state x,y,z,rx,ry,rz
 
-## Openpi evaluation
-source the uv environment from the openpi dir
-source /home/youruser/openpi/.venv/bin/activate
+## Evaluation
+### Pi0 Model Evaluation
+
+```bash
+cd tm_robot_pybullet
+source ~/openpi/.venv/bin/activate  # Use OpenPi environment
+
+python pizero_eval.py
+```
+
+### OpenVLA Model Evaluation
+
+```bash
+cd openvla
+conda activate openvla_nightly
+
+python scripts/evaluate.py \
+  --model_path ~/openvla_runs/robot_experiment/checkpoint-15000 \
+  --dataset robot_dataset \
+  --num_episodes 100
+```
+
+**Evaluation Metrics**:
+- Success rate across episodes
