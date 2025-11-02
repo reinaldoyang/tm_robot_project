@@ -139,7 +139,15 @@ torchrun --standalone --nnodes 1 --nproc-per-node 1 \
 ```bash
 uv run examples/pybullet/convert_to_lerobot.py --data_dir /path/to/your/data
 ```
+2. Computer normalization
+```bash
+uv run scripts/compute_norm_stats.py --config-name pi0_bullet_lora_finetune
+```
 
+3. Start finetune
+```bash
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 uv run scripts/train.py  pi0_bullet_lora_finetune --exp-name=onepoint --overwrite
+```
 ## Evaluation
 ### Pi0 Model Evaluation
 
