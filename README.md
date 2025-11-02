@@ -82,6 +82,10 @@ python evaluate_grasp_success.py
 - Filters based on success criteria
 - Displays success statistics
 
+#### Check if generated dataset is normal 
+```bash
+python check_dataset_collection.py
+```
 
 ### 2. Dataset Conversion
 
@@ -130,6 +134,11 @@ torchrun --standalone --nnodes 1 --nproc-per-node 1 \
   --max_steps 15000
 ```
 
+### Pi0 Finetuning
+1. First convert to lerobot format 
+```bash
+uv run examples/pybullet/convert_to_lerobot.py --data_dir /path/to/your/data
+```
 
 ## Evaluation
 ### Pi0 Model Evaluation
