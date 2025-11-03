@@ -1,13 +1,15 @@
 import numpy as np
+import argparse
 from tm_robot_sim import run_simulation, save_rlds_episode
 
-def run_multiple_episodes(n_episodes=300, base_dir = "rlds_dataset_2"):
+def run_multiple_episodes(n_episodes=100, base_dir=None):
+    if base_dir is None:
+        raise ValueError("Please specify a base directory to save episodes")
     grasp_success_list = []
     episode_counter = 1
 
     for i in range(n_episodes):
         print(f"Running episode {i+1}/{n_episodes}...")
-        # Run simulation in DIRECT mode to speed it up
         grasp_success, task_success, frames, ee_states = run_simulation() 
         grasp_success_list.append(grasp_success and task_success)
 
@@ -22,4 +24,9 @@ def run_multiple_episodes(n_episodes=300, base_dir = "rlds_dataset_2"):
     print(f"\nGrasp + task success rate over {n_episodes} episodes: {success_rate*100:.2f}%")
 
 if __name__ == "__main__":
-    run_multiple_episodes()
+    parser = argparse.ArgumentParser(description="Evaluate grasp success and save episodes")
+    parser.add_argument("--base_dir", type=str, required=True, help ="Directory to save episodes")
+    parser.add_argument("--n_episodes", type=int, default=100, help="Number of episodes to run")
+    args = parser.parse_args()
+
+    run_multiple_episodes(n_episodes=args.n_episodes, base_dir=args.base_dir)
