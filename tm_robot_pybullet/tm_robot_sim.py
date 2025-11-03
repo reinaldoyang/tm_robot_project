@@ -7,6 +7,37 @@ import math
 import random
 import cv2 as cv
 import json
+from dataclasses import dataclass, field
+from typing import Tuple, List, Optional
+
+#Configuration clasess
+@dataclass
+class SimulationConfig:
+    """Simulation settings"""
+    physics_hz: int = 240
+    gravity: float = -10.0
+    cam_width: int = 224
+    cam_height: int = 224
+
+@dataclass
+class WorkspaceConfig:
+    """Where objects can spawn"""
+    #default factory to call lambda every time
+    cube_x_range: List[float] = field(default_factory=lambda: [1, 1.1])
+    cube_y_range: List[float] = field(default_factory=lambda: [-0.4, -0.3])
+    
+    # Tray at top (positive Y)
+    tray_x_range: List[float] = field(default_factory=lambda: [0.9, 1.0])
+    tray_y_range: List[float] = field(default_factory=lambda: [0.1, 0.2])
+    
+    spawn_z_height: float = 0.63
+    min_object_distance: float = 0.15
+
+@dataclass
+class RobotConfig:
+    base_position: List[float] = field(default_factory=lambda: [1.4, -0.2, 0.6])
+    arm_joints: List[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6])
+    end_effector_idx: int = 6  # Immutable types (int, float, str) are safe
 
 def random_spawn_pos(x_range, y_range, z):
     """
@@ -61,16 +92,19 @@ def create_simulation_env(mode):
         basePosition=[1.0, -0.2, 0],
         baseOrientation = [0, 0, 0.7071, 0.7071]
     )
-    # define the spawn range on the table
-    x_range = [0.65, 1.2]
-    y_range = [-0.7, 0.3]
-    z = 0.65  # cube height on top of the table
-    draw_boundary(x_range, y_range, z)
-    cube_pos = random_spawn_pos(x_range, y_range, z)
-    tray_pos = random_spawn_pos(x_range, y_range, z)
-    min_distance = 0.15
+
+    workspace = WorkspaceConfig()
+    z = workspace.spawn_z_height
+    min_distance = workspace.min_object_distance
+
+    draw_boundary(workspace.cube_x_range, workspace.cube_y_range, z)
+    draw_boundary(workspace.tray_x_range, workspace.tray_y_range, z)
+
+    cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z)
+    tray_pos = random_spawn_pos(workspace.tray_x_range, workspace.tray_y_range, z)
+
     while np.linalg.norm(np.array(cube_pos[:2]) - np.array(tray_pos[:2])) < min_distance:
-        cube_pos = random_spawn_pos(x_range, y_range, z)
+        cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z)
 
     base_pos, _ = p.getBasePositionAndOrientation(robot_id)
     vec = np.array(cube_pos) - np.array(base_pos)
@@ -165,7 +199,7 @@ def check_task_success(cube_pos, tray_pos, max_xy_dist=0.35):
     # Check if cube is below tray rim and close enough in xy
     print(f"Distance between cube and tray: {xy_dist}")
     print(f"Height of the cube now: {cube_pos[2]}")
-    return xy_dist <= max_xy_dist and cube_pos[2] > 0.66
+    return xy_dist <= max_xy_dist and cube_pos[2] > 0.64
 
 def get_end_effector_state(robot_id, end_effector_idx):
     """
@@ -173,8 +207,10 @@ def get_end_effector_state(robot_id, end_effector_idx):
     """
     ee_state = p.getLinkState(robot_id, end_effector_idx, computeForwardKinematics=True)
     ee_pos = ee_state[0]
-    ee_orn = ee_state[1]
-    return ee_pos, ee_orn
+    ee_orn_quat = ee_state[1]
+    
+    ee_rpy = p.getEulerFromQuaternion(ee_orn_quat)
+    return ee_pos, ee_rpy
 
 def get_object_state(object_id):
     """
@@ -252,36 +288,35 @@ def run_simulation():
     
     cube_pos, cube_orn = get_object_state(cube_id)
     tray_pos, tray_orn = get_object_state(tray_id)
-
+    gripper_val=0
     for t in range(950):
         print(f'\rtimestep {t}...', end='')
         p.stepSimulation()
         time.sleep(1/240) #control simulation loop, 240hz default physics engine
 
-        gripper_val=0
+        
         if t >= 100 and t < 200:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 0) #move above cube
         elif t >= 200 and t < 300:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 0) #move down to cube
-        elif t >= 300 and t < 400:
+        elif t >= 300 and t < 350:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 1) #close gripper
-        elif t >= 400 and t < 500:
+        elif t >= 350 and t < 450:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 1) #lift up
-        elif t >=500 and t < 600:
+        elif t >=450 and t < 550:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 1) #move above tray
-        elif t >= 600 and t < 700:
+        elif t >= 550 and t < 650:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 1) #move down to tray
-        elif t >= 700 and t < 800:
+        elif t >= 650 and t < 750:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 0) #open gripper
-        elif t >= 800 and t < 900:
+        elif t >= 750 and t < 850:
             gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 0) # go up
         
         if t % 48 == 0:
             img = capture_image(cam_width, cam_height)
             frames.append(img)
             #get ee position + orientation + gripper state
-            ee_pos, ee_orn = get_end_effector_state(robot_id, end_effector_idx)
-            ee_rpy = p.getEulerFromQuaternion(ee_orn)
+            ee_pos, ee_rpy = get_end_effector_state(robot_id, end_effector_idx)
             ee_states.append([*ee_pos, *ee_rpy, gripper_val]) # * unpacking syntax, not pointer
 
         if t == 700:
