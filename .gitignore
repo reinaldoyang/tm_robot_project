@@ -1,6 +1,10 @@
 #dataset folders
 rlds_dataset_builder/rlds_dataset/
 rlds_dataset_builder/rlds_dataset_npy/
+rlds_dataset_builder/rlds_dataset_npy_2/
+rlds_dataset_builder/rlds_dataset_npy_3/
+rlds_dataset_builder/rlds_dataset_npy_3_change_prompt/
+tm_robot_pybullet/rlds_dataset_3/
 rlds_dataset_builder/example_dataset/
 tm_robot_pybullet/rlds_dataset/
 tm_robot_pybullet/Random_record_one_grasp_90_v2.py
@@ -11,3 +15,12 @@ tm_robot_pybullet/rlds_dataset_2/
 Dockerfile
 rlds_dataset_builder/__pycache__/
 rlds_dataset_builder/robot_dataset/
+rlds_dataset_builder/rlds_1p_spawn_opt_npy/
+tm_robot_pybullet/average_gripper_state.png
+tm_robot_pybullet/plot.py
+tm_robot_pybullet/plot_gripper_state.py
+tm_robot_pybullet/rlds_1p_spawn_opt/
+tm_robot_pybullet/successful_videos/
+tm_robot_pybullet/teleoperate_tm5.py
+tm_robot_real/
+tm_robot_pybullet/gripper state/

@@ -1,7 +1,7 @@
 import numpy as np
 
 # Load a single episode
-episode_path = "robot_dataset/data/train/episode_014.npy"
+episode_path = "rlds_dataset_npy_3_change_prompt/train/episode_001.npy"
 data = np.load(episode_path, allow_pickle=True)  # data is a list of dicts
 
 print("Type:", type(data))

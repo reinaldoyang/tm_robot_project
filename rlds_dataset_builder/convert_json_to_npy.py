@@ -37,7 +37,7 @@ def convert_json_to_npy(json_path, img_base_path, save_path):
             'image': img_array,
             'state' : np.array(ee_states[i], dtype = np.float32),
             'action': action,
-            'language_instruction': "pick up the white cube"
+            'language_instruction': "put cube in tray"
         }
         episode.append(step_dict)
 
@@ -50,7 +50,7 @@ def convert_all_eps(rlds_dataset_dir, save_dir):
     episode_folders = []
     for items in all_items:
         complete_path = os.path.join(rlds_dataset_dir, items) #combine the main folder and the folder name
-        if os.path.isdir(complete_path): #check if true
+        if os.path.isdir(complete_path):
             episode_folders.append(items)
 
     #process each episode in the episode_folders
@@ -68,9 +68,7 @@ def convert_all_eps(rlds_dataset_dir, save_dir):
         save_path = os.path.join(save_dir, f"{episode_folder}.npy")
         convert_json_to_npy(json_path, img_base_path, save_path)
 
-def split_dataset():
-    # Paths
-    dataset_dir = "rlds_dataset_npy"      # your current folder with all .npy episodes
+def split_dataset(dataset_dir):
     train_dir = os.path.join(dataset_dir, "train")
     val_dir = os.path.join(dataset_dir, "val")
 
@@ -101,7 +99,7 @@ def split_dataset():
     print(f"Train: {len(train_files)}, Val: {len(val_files)}")
 
 if __name__ == "__main__":
-    rlds_dataset_dir = "../tm_robot_pybullet/rlds_dataset_2"
-    save_dir = "rlds_dataset_npy"
+    rlds_dataset_dir = "../tm_robot_pybullet/rlds_1p_spawn_opt"
+    save_dir = "rlds_1p_spawn_opt_npy"
     convert_all_eps(rlds_dataset_dir, save_dir)
-    split_dataset()
+    split_dataset(save_dir)
