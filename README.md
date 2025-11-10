@@ -112,6 +112,10 @@ tfds build --overwrite
 
 ### OpenVLA Fine-tuning
 
+Check out the environment used for training with 5090 gpu
+
+**File**: `openvla_5090.txt`
+
 ```bash
 cd openvla
 conda activate openvla_nightly
