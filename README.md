@@ -26,7 +26,13 @@ git clone https://github.com/yourusername/tm_robot_project.git
 cd tm_robot_project
 ```
 
-### 2. Set Up PyBullet Environment
+### 2. Environment setup
+```bash
+docker run -it --rm \
+  -v tm_robot_project:/workspace \
+  tm_robot_vla:latest
+```
+
 
 ```bash
 # Create and activate conda environment
