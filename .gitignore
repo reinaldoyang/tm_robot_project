@@ -24,3 +24,7 @@ tm_robot_pybullet/successful_videos/
 tm_robot_pybullet/teleoperate_tm5.py
 tm_robot_real/
 tm_robot_pybullet/gripper state/
+video_log/
+videos/
+tm_robot_pybullet/dataset/
+tm_robot_pybullet/evaluation_videos/
