@@ -27,21 +27,26 @@ cd tm_robot_project
 ```
 
 ### 2. Environment setup
+#### Conda
 ```bash
-docker run -it --rm \
-  -v tm_robot_project:/workspace \
+conda env create -f openvla_nightly_environment.yml
+```
+#### Docker
+Build the container, if you changed the yml, always rebuild the image
+```bash
+docker build -t tm_robot_vla:latest .
+```
+
+To run the container
+```bash
+docker run --gpus all -it --rm \
+  -v $(pwd):/workspace \
+  -v /home/reinaldoyang/openvla_runs:/openvla_runs \
+  -e OPENVLA_RUNS_PATH=/openvla_runs \
   tm_robot_vla:latest
+
 ```
 
-
-```bash
-# Create and activate conda environment
-conda create -n tm_robot python=3.10
-conda activate tm_robot
-
-# Install PyBullet and dependencies
-pip install pybullet numpy opencv-python matplotlib tqdm
-```
 ### 3. Install OpenVLA (for OpenVLA training)
 Please refer to OpenVLA official documentation
 
@@ -56,7 +61,6 @@ Please refer to RLDS dataset builder repo
 
 ```bash
 cd tm_robot_pybullet
-conda activate tm_robot
 python tm_robot_sim.py
 ```
 
