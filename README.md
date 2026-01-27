@@ -76,11 +76,10 @@ python tm_robot_slider_test.py
 ### 1. Data Generation
 #### Batch Generation
 ```bash
-python evaluate_grasp_success.py
+python automate_data_collection.py --base_dir <location to save dataset> --n_episodes <num of episodes>
 ```
-- Generates 100 episodes automatically
-- Filters based on success criteria
-- Displays success statistics
+- Generates any number of dataset you need
+- Display successful episodes
 
 #### Check if generated dataset is normal 
 ```bash
@@ -99,7 +98,7 @@ python convert_json_to_npy.py
 
 ```bash
 # Copy NPY data to RLDS builder
-cp -r data/npy/* rlds_dataset_builder/robot_dataset/data/
+cp -r /path/to/source/{train,val} robot_dataset/data/
 
 # Build TFRecord dataset
 cd rlds_dataset_builder/robot_dataset
