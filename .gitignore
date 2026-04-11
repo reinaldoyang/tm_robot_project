@@ -28,3 +28,7 @@ video_log/
 videos/
 tm_robot_pybullet/dataset/
 tm_robot_pybullet/evaluation_videos/
+tm_robot_pybullet/evaluation_vid/
+tm_robot_pybullet/5hz_data_mod/
+rlds_dataset_builder/dataset/
+

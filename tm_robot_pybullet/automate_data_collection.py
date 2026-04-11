@@ -10,12 +10,12 @@ def run_multiple_episodes(n_episodes=100, base_dir=None):
 
     for i in range(n_episodes):
         print(f"Running episode {i+1}/{n_episodes}...")
-        grasp_success, task_success, frames, ee_states = run_simulation() 
+        grasp_success, task_success, frames, ee_states, cube_pos, tray_pos = run_simulation() 
         grasp_success_list.append(grasp_success and task_success)
 
         if grasp_success and task_success:
             episode_id = f"episode_{episode_counter:03d}"
-            save_rlds_episode(base_dir, episode_id, frames, ee_states)
+            save_rlds_episode(base_dir, episode_id, frames, ee_states, cube_pos, tray_pos)
             print(f"Saved RLDS episode: {episode_id}")
             episode_counter += 1
 

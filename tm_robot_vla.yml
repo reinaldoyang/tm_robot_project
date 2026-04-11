@@ -1,0 +1,43 @@
+name: tm_robot_vla
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - matplotlib
+  - opencv
+  - pillow
+  - h5py
+  - pandas
+  - scikit-learn
+  - jupyter
+  - notebook
+  - ipython
+  - ipykernel
+  - traitlets
+  - setuptools
+  - wheel
+  - mkl
+  - mkl-service
+  - pip:
+      - torch==2.8.0
+      - torchvision==0.23.0
+      - torchaudio==2.8.0
+      - absl-py
+      - accelerate
+      - transformers==4.40.1
+      - sentencepiece
+      - timm==0.9.10
+      - peft
+      - safetensors
+      - wandb
+      - hf-xet
+      - apache-beam
+      - pyarrow
+      - protobuf
+      - etils
+      - einops
+      - pybullet

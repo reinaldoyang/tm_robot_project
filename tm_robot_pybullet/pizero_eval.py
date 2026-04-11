@@ -23,15 +23,15 @@ def save_gripper_states(gripper_states, episode_idx, save_dir="gripper state"):
     print(f"Gripper states saved to {save_path}")
 
 def load_pi0_policy():
-    config = _config.get_config("pi0_bullet_lora_finetune")
-    checkpoint_dir = "/home/reinaldoyang/openpi/checkpoints/pi0_bullet_lora_finetune/onepoint_ah/6000"
+    config = _config.get_config("pi05_bullet")
+    checkpoint_dir = "/home/reinaldoyang/openpi/checkpoints/pi05_bullet/pi05_50hz_ah50/9999"
     policy = policy_config.create_trained_policy(config, checkpoint_dir)
     return policy
 
 def predict_action(policy, image, robot_state, prompt):
     example = {
         "observation/image":image,
-        "observation/state": robot_state,
+        "observation/state": robot_state,    
         "prompt": prompt
     }
     action_chunk = policy.infer(example)["actions"]
@@ -68,28 +68,15 @@ def apply_action_to_robot(robot_id, gripper_id, action, arm_joints):
     p.setJointMotorControl2(gripper_id, 6, p.POSITION_CONTROL,
                             targetPosition=gripper_val * 0.05, force=100)
 
-def get_gripper_state(gripper_id):
-    """
-    Get the current state of the gripper as 0 (closed) or 1 (open).
-    """
-    gripper_joint_4 = p.getJointState(gripper_id, 4)[0]  # Joint 4 position
-    gripper_joint_6 = p.getJointState(gripper_id, 6)[0]  # Joint 6 position
-    
-    # Average the positions of the two gripper joints
-    gripper_position = (gripper_joint_4 + gripper_joint_6) / 2.0
-    
-    # Normalize to 0 (closed) or 1 (open)
-    gripper_state = 1 if gripper_position > 0.025 else 0  # Threshold at half of 0.05
-    return gripper_state
 
-def run_real_time_pi0(policy, replan_steps=5, episode_idx = 0, save_dir="gripper state", save_video_dir="videos"):
+def run_real_time_pi0(policy, replan_steps=1, episode_idx = 0, save_dir="gripper state", save_video_dir="videos"):
     plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("others")
     attach_gripper_to_robot(robot_id, gripper_id)
     arm_joints = [1,2,3,4,5,6]
     end_effector_idx = 6
     cam_width, cam_height = 224, 224
-    prompt = "pick up the white cube"
-    control_dt = 0.2
+    prompt = "put white cube on tray"
+    control_dt = 0.02
     physics_dt = 1/240
     steps_per_control = int(control_dt / physics_dt)
     
@@ -100,7 +87,6 @@ def run_real_time_pi0(policy, replan_steps=5, episode_idx = 0, save_dir="gripper
     
     try:
         step_count = 0
-        control_step = 0  # Track control steps separately
         gripper_state = 0
         while step_count < 1200:
             p.stepSimulation()
@@ -125,9 +111,7 @@ def run_real_time_pi0(policy, replan_steps=5, episode_idx = 0, save_dir="gripper
                 
                 # Pop one action from the queue and execute it
                 action = action_plan.popleft()
-                # print(f"Control step {control_step}: Executing action: {action}")
                 apply_action_to_robot(robot_id, gripper_id, action, arm_joints)
-                control_step += 1
                 new_gripper_state = float(action[6])
                 gripper_state = np.clip(new_gripper_state, 0.0, 1.0)
                 gripper_states.append(gripper_state)

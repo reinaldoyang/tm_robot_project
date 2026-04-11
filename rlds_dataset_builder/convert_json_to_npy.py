@@ -99,7 +99,7 @@ def split_dataset(dataset_dir):
     print(f"Train: {len(train_files)}, Val: {len(val_files)}")
 
 if __name__ == "__main__":
-    rlds_dataset_dir = "../tm_robot_pybullet/rlds_1p_spawn_opt"
-    save_dir = "rlds_1p_spawn_opt_npy"
+    rlds_dataset_dir = "../tm_robot_pybullet/5hz_data_mod"
+    save_dir = "5hz_data_mod_npy"
     convert_all_eps(rlds_dataset_dir, save_dir)
     split_dataset(save_dir)

@@ -141,31 +141,28 @@ def save_video(frames, save_video_dir, episode_id, cam_width, cam_height, playba
     video_writer.release()  # Release the video writer
     print(f"📁 Video saved: {video_path}")
 
-def run_real_time(vla, processor, unnorm_key, device="cuda:0", save_video_dir="successful_videos"):
-    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("GUI")
+def run_real_time(vla, processor, unnorm_key, device="cuda:0", save_video_dir="evaluation_vid", episode_idx = 0):
+    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("others")
     attach_gripper_to_robot(robot_id, gripper_id)
     arm_joints = [1, 2, 3, 4, 5, 6]
-    start_pos = [0.7, -0.2, 1.3]
-    end_effector_idx = 6
-    set_initial_robot_pose(robot_id, arm_joints, end_effector_idx, start_pos)
     cam_width, cam_height = 224, 224
     prompt = "In: What action should the robot take to put cube in tray?\nOut:"
-    control_dt = 0.2
-    physics_dt = 1 / 240
-    steps_per_control = int(control_dt / physics_dt)
+    control_dt = 0.2 #update control every 0.2s
+    physics_dt = 1 / 240 #240hz
+    steps_per_control = int(control_dt / physics_dt) #do 48 physics step per control step
 
     # Initialize video writer
     frames = []
 
     try:
         step_count = 0
-        while step_count < 1200:
+        while step_count < 450:
             # Step the simulation
-            p.stepSimulation()
+            p.stepSimulation() #physic step
             time.sleep(physics_dt)
-            step_count += 1
+            step_count += 1 #how many physic step have passed
 
-            if step_count % steps_per_control == 0:
+            if step_count % steps_per_control == 0: #run every 48 physics steps
                 # Capture image from the camera
                 image = capture_image(cam_width, cam_height)
 
@@ -181,20 +178,22 @@ def run_real_time(vla, processor, unnorm_key, device="cuda:0", save_video_dir="s
         cube_now = p.getBasePositionAndOrientation(cube_id)[0]
         tray_pos = p.getBasePositionAndOrientation(tray_id)[0]
         task_success = check_task_success(cube_now, tray_pos)
-        print("✅ Task success:", task_success)
+        print("✅ Task success:" if task_success else "❌ Task failed:", task_success)
 
-        # Save video if task is successful, comment these 3 lines if don't want to save video
-        if task_success:
-            episode_id = len(os.listdir(save_video_dir)) + 1
-            save_video(frames, save_video_dir, episode_id, cam_width, cam_height, playback_fps=5)
+        # Save video for all evaluations
+        result_dir = "successful" if task_success else "unsuccessful"
+        episode_dir = os.path.join(save_video_dir, result_dir)
+        os.makedirs(episode_dir, exist_ok=True)
+        episode_id = episode_idx
+        save_video(frames, episode_dir, episode_id, cam_width, cam_height, playback_fps=5)
 
         return task_success
     finally:
         p.disconnect()
 
 def evaluate_model(num_episodes = 100):
-    open_vla_weights_path = '/home/reinaldoyang/openvla_runs/robot_1p_spawn_opt/openvla-7b+robot_dataset+b32+lr-0.0005+lora-r32+dropout-0.0--image_aug'
-    dataset_stats_path = "/home/reinaldoyang/openvla_runs/robot_1p_spawn_opt/openvla-7b+robot_dataset+b32+lr-0.0005+lora-r32+dropout-0.0--image_aug/dataset_statistics.json"
+    open_vla_weights_path = '/home/reinaldoyang/openvla_runs/robot_experiment/openvla-7b+robot_dataset+b32+lr-0.0005+lora-r32+dropout-0.0--image_aug'
+    dataset_stats_path = "/home/reinaldoyang/openvla_runs/robot_experiment/openvla-7b+robot_dataset+b32+lr-0.0005+lora-r32+dropout-0.0--image_aug/dataset_statistics.json"
     device = "cuda:0"
 
     processor, vla, unnorm_key = load_vla_model(open_vla_weights_path, 
@@ -203,7 +202,7 @@ def evaluate_model(num_episodes = 100):
     successes = 0
     for ep in range(num_episodes):
         print(f"=== Running episode {ep+1}/{num_episodes} ===")
-        success = run_real_time(vla, processor, unnorm_key, device)
+        success = run_real_time(vla, processor, unnorm_key, device, episode_idx = ep)
         if success:
             successes += 1
             print("✅ Success")

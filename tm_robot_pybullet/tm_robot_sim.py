@@ -30,7 +30,8 @@ class WorkspaceConfig:
     tray_x_range: List[float] = field(default_factory=lambda: [0.9, 1.0])
     tray_y_range: List[float] = field(default_factory=lambda: [0.1, 0.2])
     
-    spawn_z_height: float = 0.63
+    cube_spawn_z_height: float = 0.65
+    tray_spawn_z_height: float = 0.63  # Different height for tray
     min_object_distance: float = 0.15
 
 @dataclass
@@ -57,9 +58,9 @@ def random_spawn_pos(x_range, y_range, z):
     y = random.uniform(y_min, y_max)
     return [x, y, z]
 
-def draw_boundary(x_range, y_range, z):
+def draw_boundary(x_range, y_range, z=0.63):
     """
-    Draw a boundary box to see spawn area
+    Draw a boundary box to see spawn area, default height is 0.63
     """
     corners = [
         [x_range[0], y_range[0], z], #bottom left
@@ -87,6 +88,16 @@ def create_simulation_env(mode):
         baseOrientation=[0, 0, 0, 1],
         useFixedBase = True
     )
+    initial_joint_positions = [0, 0, -math.pi/2.25, 0, -math.pi/2, 0]  # Example angles
+    for i, joint_index in enumerate([1, 2, 3, 4, 5, 6]):  # Joint indices
+        p.resetJointState(robot_id, joint_index, initial_joint_positions[i])
+        p.setJointMotorControl2(
+            bodyIndex=robot_id,
+            jointIndex=joint_index,
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=initial_joint_positions[i],
+            force=300  # Apply sufficient force to hold the position
+        )
     table_id = p.loadURDF(
         "table/table.urdf",
         basePosition=[1.0, -0.2, 0],
@@ -94,17 +105,18 @@ def create_simulation_env(mode):
     )
 
     workspace = WorkspaceConfig()
-    z = workspace.spawn_z_height
+    z_cube = workspace.cube_spawn_z_height
+    z_tray = workspace.tray_spawn_z_height
     min_distance = workspace.min_object_distance
 
-    draw_boundary(workspace.cube_x_range, workspace.cube_y_range, z)
-    draw_boundary(workspace.tray_x_range, workspace.tray_y_range, z)
+    draw_boundary(workspace.cube_x_range, workspace.cube_y_range, 0.63)
+    draw_boundary(workspace.tray_x_range, workspace.tray_y_range, 0.63)
 
-    cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z)
-    tray_pos = random_spawn_pos(workspace.tray_x_range, workspace.tray_y_range, z)
+    cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z_cube)
+    tray_pos = random_spawn_pos(workspace.tray_x_range, workspace.tray_y_range, z_tray)
 
     while np.linalg.norm(np.array(cube_pos[:2]) - np.array(tray_pos[:2])) < min_distance:
-        cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z)
+        cube_pos = random_spawn_pos(workspace.cube_x_range, workspace.cube_y_range, z_cube)
 
     base_pos, _ = p.getBasePositionAndOrientation(robot_id)
     vec = np.array(cube_pos) - np.array(base_pos)
@@ -125,10 +137,36 @@ def create_simulation_env(mode):
 
 def attach_gripper_to_robot(robot_id, gripper_id):
     """
-    Attach the default wsg50 gripper to tm robot
+    Attach the default wsg50 gripper to the TM robot.
     """
-    p.createConstraint(robot_id, 6, gripper_id, 0, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 0]) #attach gripper to tmrobot
-    tmrobot_cid2 = p.createConstraint(gripper_id, 4, gripper_id, 6, jointType=p.JOINT_GEAR, jointAxis=[1,1,1], parentFramePosition=[0,0,0], childFramePosition=[0,0,0])
+    # Get the current pose of the robot's end-effector (link 6)
+    ee_state = p.getLinkState(robot_id, 6, computeForwardKinematics=True)
+    ee_pos = ee_state[0]  # End-effector position
+    ee_orn = ee_state[1]  # End-effector orientation (quaternion)
+
+    # Align the gripper's base position and orientation with the end-effector
+    p.resetBasePositionAndOrientation(gripper_id, ee_pos, ee_orn)
+
+    # Create a fixed constraint between the robot and the gripper
+    p.createConstraint(
+        parentBodyUniqueId=robot_id,
+        parentLinkIndex=6,  # End-effector link
+        childBodyUniqueId=gripper_id,
+        childLinkIndex=0,  # Base link of the gripper
+        jointType=p.JOINT_FIXED,
+        jointAxis=[0, 0, 0],
+        parentFramePosition=[0, 0, 0],
+        childFramePosition=[0, 0, 0]
+    )
+
+    # Create a gear constraint to synchronize the gripper's fingers
+    tmrobot_cid2 = p.createConstraint(
+        gripper_id, 4, gripper_id, 6,
+        jointType=p.JOINT_GEAR,
+        jointAxis=[1, 1, 1],
+        parentFramePosition=[0, 0, 0],
+        childFramePosition=[0, 0, 0]
+    )
     p.changeConstraint(tmrobot_cid2, gearRatio=-1, erp=0.5, relativePositionTarget=0, maxForce=200)
 
 def move_robot(robot_id, gripper_id, arm_joints, end_effector_idx, target_pos, gripper_val):
@@ -191,15 +229,17 @@ def check_robot_joint_info(robot_id):
         info = p.getJointInfo(robot_id, j)
         print(j, info[1].decode("utf-8"), info[2])
 
-def check_task_success(cube_pos, tray_pos, max_xy_dist=0.35):
+def check_task_success(cube_pos, tray_pos, max_xy_dist=0.25):
     """
     Takes in cube and tray pos, and max distance betweeen cube and tray center for eval
     """
+    tray_height = tray_pos[2]
     xy_dist = np.linalg.norm(np.array(cube_pos[:2]) - np.array(tray_pos[:2]))
     # Check if cube is below tray rim and close enough in xy
     print(f"Distance between cube and tray: {xy_dist}")
     print(f"Height of the cube now: {cube_pos[2]}")
-    return xy_dist <= max_xy_dist and cube_pos[2] > 0.64
+    height_range = tray_height <= cube_pos[2] <= tray_height + 0.2
+    return xy_dist <= max_xy_dist and height_range
 
 def get_end_effector_state(robot_id, end_effector_idx):
     """
@@ -236,15 +276,15 @@ def check_grasp_success(tcp_pos, cube_pos, max_dist = 0.2):
     print(f'Distance to end effector: {dist_to_ee}')
     return dist_to_ee <= max_dist
 
-def save_rlds_episode(base_dir, episode_id, frames, ee_states):
+def save_rlds_episode(base_dir, episode_id, frames, ee_states, cube_spawn_pos, tray_spawn_pos):
     """
-    Save image observation state and also 7D robot state ( EE pose + gripper for a given timestep)
+    Save image observation state, 7D robot state (EE pose + gripper), and spawn positions.
     """
     episode_dir = os.path.join(base_dir, episode_id)
     if not os.path.exists(episode_dir):
         os.makedirs(episode_dir)
 
-    #save image in another folder
+    # Save images in a separate folder
     img_dir = os.path.join(episode_dir, "img")
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
@@ -254,15 +294,17 @@ def save_rlds_episode(base_dir, episode_id, frames, ee_states):
         img_filename = f"img_{t:04d}.png"
         cv.imwrite(os.path.join(img_dir, img_filename), img)
         img_filenames.append(img_filename)
-    
-    #save in RLDS format
+
+    # Save in RLDS format
     episode_data = {
-        "episode_id" : episode_id, 
+        "episode_id": episode_id,
         "timesteps": len(frames),
         "img_filenames": img_filenames,
-        "ee_states": ee_states #7D : [x,y,z,rx,ry,rz,gripper_state]
+        "ee_states": ee_states,  # 7D: [x, y, z, rx, ry, rz, gripper_state]
+        "cube_spawn_pos": cube_spawn_pos,  # Save cube spawn position
+        "tray_spawn_pos": tray_spawn_pos   # Save tray spawn position
     }
-    with open(os.path.join(episode_dir, f"{episode_id}.json"), "w") as f: #open the episode.json file and write the episode data
+    with open(os.path.join(episode_dir, f"{episode_id}.json"), "w") as f:  # Open the episode.json file and write the episode data
         json.dump(episode_data, f, indent=2)
 
 def move_and_get_gripper(robot_id, gripper_id, arm_joints, ee_idx, target_pos, gripper_val):
@@ -276,7 +318,7 @@ def run_simulation():
     """
     Run the simulation with the predefined environments
     """
-    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("others")
+    plane_id, robot_id, table_id, cube_id, tray_id, gripper_id = create_simulation_env("GUI")
     attach_gripper_to_robot(robot_id, gripper_id)
 
     cam_width, cam_height = 224, 224
@@ -289,37 +331,36 @@ def run_simulation():
     cube_pos, cube_orn = get_object_state(cube_id)
     tray_pos, tray_orn = get_object_state(tray_id)
     gripper_val=0
-    for t in range(950):
+    for t in range(470):
         print(f'\rtimestep {t}...', end='')
         p.stepSimulation()
         time.sleep(1/240) #control simulation loop, 240hz default physics engine
-
         
-        if t >= 100 and t < 200:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 0) #move above cube
+        if t >= 0 and t < 50:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1], 0)  # move above cube
+        elif t >= 50 and t < 100:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 0)  # move down to cube
+        elif t >= 100 and t < 150:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 1)  # close gripper
+        elif t >= 150 and t < 200:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 1)  # lift up
         elif t >= 200 and t < 300:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 0) #move down to cube
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 1)  # move above tray
         elif t >= 300 and t < 350:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 0.9], 1) #close gripper
-        elif t >= 350 and t < 450:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [cube_pos[0], cube_pos[1], 1.1], 1) #lift up
-        elif t >=450 and t < 550:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 1) #move above tray
-        elif t >= 550 and t < 650:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 1) #move down to tray
-        elif t >= 650 and t < 750:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 0) #open gripper
-        elif t >= 750 and t < 850:
-            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 0) # go up
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 1)  # move down to tray
+        elif t >= 350 and t < 400:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 0.95], 0)  # open gripper
+        elif t >= 400 and t < 450:
+            gripper_val = move_and_get_gripper(robot_id, gripper_id, arm_joints, end_effector_idx, [tray_pos[0], tray_pos[1], 1.1], 0)  # go up
         
-        if t % 48 == 0:
+        if t % 48 == 0:  # Collect data every 48 steps for 5 Hz
             img = capture_image(cam_width, cam_height)
             frames.append(img)
             #get ee position + orientation + gripper state
             ee_pos, ee_rpy = get_end_effector_state(robot_id, end_effector_idx)
             ee_states.append([*ee_pos, *ee_rpy, gripper_val]) # * unpacking syntax, not pointer
 
-        if t == 700:
+        if t == 350:
             cube_now, _ = get_object_state(cube_id)
             tcp_pos = get_gripper_tcp(gripper_id, 5, 7)
             grasp_success = check_grasp_success(tcp_pos, cube_now)
@@ -335,7 +376,7 @@ def run_simulation():
         print("Episode will NOT be saved")
 
     p.disconnect()
-    return grasp_success, task_success, frames, ee_states
+    return grasp_success, task_success, frames, ee_states, cube_pos, tray_pos
 
 if __name__ == "__main__":
     run_simulation()
